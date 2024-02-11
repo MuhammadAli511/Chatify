@@ -1,0 +1,340 @@
+Index: app/src/main/java/com/ass2/i190417_i192048/MainScreen.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.ass2.i190417_i192048;\r\n\r\nimport androidx.annotation.NonNull;\r\nimport androidx.appcompat.app.AppCompatActivity;\r\n\r\nimport android.annotation.SuppressLint;\r\nimport android.content.Context;\r\nimport android.content.Intent;\r\nimport android.media.AudioAttributes;\r\nimport android.media.AudioManager;\r\nimport android.media.MediaMetadataRetriever;\r\nimport android.media.MediaPlayer;\r\nimport android.net.Uri;\r\nimport android.os.Bundle;\r\nimport android.os.Handler;\r\nimport android.view.View;\r\nimport android.widget.ImageView;\r\nimport android.widget.LinearLayout;\r\nimport android.widget.SeekBar;\r\nimport android.widget.Toast;\r\n\r\nimport com.google.android.gms.tasks.OnFailureListener;\r\nimport com.google.android.gms.tasks.OnSuccessListener;\r\nimport com.google.firebase.database.DataSnapshot;\r\nimport com.google.firebase.database.DatabaseError;\r\nimport com.google.firebase.database.DatabaseReference;\r\nimport com.google.firebase.database.FirebaseDatabase;\r\nimport com.google.firebase.database.ValueEventListener;\r\nimport com.google.firebase.storage.FirebaseStorage;\r\nimport com.google.firebase.storage.StorageReference;\r\n\r\nimport java.io.IOException;\r\n\r\npublic class MainScreen extends AppCompatActivity  {\r\n    LinearLayout liked, add, search, listenlater;\r\n    SeekBar seekBar;\r\n    ImageView play_button;\r\n    MediaPlayer mediaPlayer;\r\n    //\"gs://i190417-i192048.appspot.com/audio/sample-3s.mp3\"\r\n    String audioUrl;\r\n    //String audioUrl = \"https://firebasestorage.googleapis.com/v0/b/i190417-i192048.appspot.com/o/audio%2FAstro?alt=media&token=d11a4997-017b-4d0d-8d7e-40ed28c76a57\";\r\n    DatabaseReference databaseReference;\r\n    FirebaseDatabase firebaseDatabase;\r\n    FirebaseStorage firebasestorage;\r\n    //String storageLocation =\r\n\r\n    @SuppressLint(\"MissingInflatedId\")\r\n    @Override\r\n    protected void onCreate(Bundle savedInstanceState) {\r\n\r\n        super.onCreate(savedInstanceState);\r\n        setContentView(R.layout.activity_main_screen);\r\n        seekBar = findViewById(R.id.seek_bar);\r\n        play_button = findViewById(R.id.to_play_16);\r\n        liked = findViewById(R.id.liked);\r\n        add = findViewById(R.id.add);\r\n        search = findViewById(R.id.search);\r\n        listenlater = findViewById(R.id.listenlater);\r\n        StorageReference storageReference = FirebaseStorage.getInstance().getReference();\r\n        firebaseDatabase = FirebaseDatabase.getInstance();\r\n        databaseReference = firebaseDatabase.getReference();\r\n\r\n\r\n        mediaPlayer = new MediaPlayer();\r\n\r\n        play_button.setOnClickListener(new View.OnClickListener() {\r\n            @Override\r\n            public void onClick(View view) {\r\n                StorageReference audioRef = storageReference.child(\"audio/Astro\" );\r\n\r\n                databaseReference.addValueEventListener(new ValueEventListener() {\r\n                    @Override\r\n                    public void onDataChange(@NonNull DataSnapshot snapshot) {\r\n                        audioRef.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {\r\n                            @Override\r\n                            public void onSuccess(Uri uri) {\r\n                                audioUrl = uri.toString();\r\n                                System.out.println(audioUrl);\r\n                                onPlayClick();\r\n                                playAudio(audioUrl);\r\n                            }\r\n                        }).addOnFailureListener(new OnFailureListener() {\r\n                            @Override\r\n                            public void onFailure(@NonNull Exception e) {\r\n                                Toast.makeText(MainScreen.this,\"Failure getting url\",Toast.LENGTH_SHORT).show();\r\n                            }\r\n                        });\r\n                    }\r\n\r\n                    @Override\r\n                    public void onCancelled(@NonNull DatabaseError error) {\r\n                        Toast.makeText(MainScreen.this, \"Fail to get audio url.\", Toast.LENGTH_SHORT).show();\r\n                    }\r\n                });\r\n            }\r\n        });\r\n\r\n        add.setOnClickListener(new View.OnClickListener() {\r\n            @Override\r\n            public void onClick(View v) {\r\n                startActivity(new Intent(MainScreen.this, UploadMusic.class));\r\n            }\r\n        });\r\n\r\n\r\n\r\n    }\r\n\r\n    private void playAudio(String audioUrl) {\r\n\r\n        mediaPlayer.setAudioAttributes(new AudioAttributes.Builder().setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)\r\n                .setUsage(AudioAttributes.USAGE_MEDIA).build());\r\n\r\n        if(!mediaPlayer.isPlaying()){\r\n            try {\r\n                //mediaPlayer.reset();\r\n                mediaPlayer.setDataSource(audioUrl);\r\n                mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {\r\n                    @Override\r\n                    public void onPrepared(MediaPlayer mediaPlayer) {\r\n                        setSeekBar(audioUrl);\r\n                        mediaPlayer.start();\r\n                    }\r\n                });\r\n                mediaPlayer.prepareAsync();\r\n                Toast.makeText(this, \"Audio started playing..\", Toast.LENGTH_SHORT).show();\r\n            } catch (IOException e) {\r\n                e.printStackTrace();\r\n            }\r\n        }\r\n        else if (mediaPlayer.isPlaying()){\r\n            try{\r\n                onPauseClick();\r\n                mediaPlayer.reset();\r\n                mediaPlayer.prepare();\r\n                mediaPlayer.stop();\r\n                mediaPlayer.release();\r\n\r\n            } catch (Exception e){\r\n                e.printStackTrace();\r\n            }\r\n            Toast.makeText(MainScreen.this,\"Audio Paused\",Toast.LENGTH_SHORT).show();\r\n        }\r\n\r\n    }\r\n\r\n//    public void initMediaPlayer(){\r\n//        mediaPlayer.setOnErrorListener((MediaPlayer.OnErrorListener) this);\r\n//    }\r\n\r\n    @SuppressLint(\"ResourceAsColor\")\r\n    private void onPlayClick(){\r\n        play_button.setBackgroundColor(R.color.black);\r\n        play_button.setImageResource(R.drawable.pause);\r\n    }\r\n    @SuppressLint(\"ResourceAsColor\")\r\n    private void onPauseClick(){\r\n        play_button.setBackgroundColor(R.color.black);\r\n        play_button.setImageResource(R.drawable.playone);\r\n    }\r\n\r\n    public void setSeekBar(String audioUrl){\r\n\r\n        System.out.println(mediaPlayer.getDuration());\r\n        seekBar.setMax(mediaPlayer.getDuration()/1000);\r\n        Handler handler = new Handler();\r\n        MainScreen.this.runOnUiThread(new Runnable() {\r\n            @Override\r\n            public void run() {\r\n                if(mediaPlayer!=null){\r\n                    int current_pos = mediaPlayer.getCurrentPosition()/1000;\r\n                    seekBar.setProgress(current_pos);\r\n                    if(mediaPlayer.getDuration()/1000 == current_pos){\r\n                        onPauseClick();\r\n                        Toast.makeText(MainScreen.this,\"Song Completed\",Toast.LENGTH_SHORT).show();\r\n                        mediaPlayer.seekTo(0);\r\n                        seekBar.setProgress(0);\r\n                        // this line (return) should be changed to something productive\r\n                        // may restart activity or play the next coming music\r\n                        return;\r\n                    }\r\n\r\n                }\r\n                handler.postDelayed(this,1000);\r\n            }\r\n        });\r\n    }\r\n\r\n//    @Override\r\n//    public boolean onError(MediaPlayer mediaPlayer, int i, int i1) {\r\n//        mediaPlayer.reset();\r\n//        return false;\r\n//    }\r\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/ass2/i190417_i192048/MainScreen.java b/app/src/main/java/com/ass2/i190417_i192048/MainScreen.java
+--- a/app/src/main/java/com/ass2/i190417_i192048/MainScreen.java	
++++ b/app/src/main/java/com/ass2/i190417_i192048/MainScreen.java	
+@@ -4,45 +4,63 @@
+ import androidx.appcompat.app.AppCompatActivity;
+ 
+ import android.annotation.SuppressLint;
+-import android.content.Context;
+ import android.content.Intent;
++import android.graphics.Bitmap;
++import android.graphics.BitmapFactory;
+ import android.media.AudioAttributes;
+-import android.media.AudioManager;
+-import android.media.MediaMetadataRetriever;
+ import android.media.MediaPlayer;
+ import android.net.Uri;
+ import android.os.Bundle;
+ import android.os.Handler;
++import android.util.Log;
+ import android.view.View;
+ import android.widget.ImageView;
+ import android.widget.LinearLayout;
+ import android.widget.SeekBar;
++import android.widget.TextView;
+ import android.widget.Toast;
+ 
++import com.google.android.gms.tasks.OnCompleteListener;
+ import com.google.android.gms.tasks.OnFailureListener;
+ import com.google.android.gms.tasks.OnSuccessListener;
++import com.google.android.gms.tasks.Task;
+ import com.google.firebase.database.DataSnapshot;
+ import com.google.firebase.database.DatabaseError;
+ import com.google.firebase.database.DatabaseReference;
+ import com.google.firebase.database.FirebaseDatabase;
+ import com.google.firebase.database.ValueEventListener;
++import com.google.firebase.firestore.CollectionReference;
++import com.google.firebase.firestore.DocumentReference;
++import com.google.firebase.firestore.DocumentSnapshot;
++import com.google.firebase.firestore.FirebaseFirestore;
++import com.google.firebase.firestore.QueryDocumentSnapshot;
++import com.google.firebase.firestore.QuerySnapshot;
+ import com.google.firebase.storage.FirebaseStorage;
+ import com.google.firebase.storage.StorageReference;
++import com.squareup.picasso.Picasso;
+ 
+ import java.io.IOException;
++import java.io.InputStream;
++import java.net.URL;
++import java.sql.Time;
++import java.util.ArrayList;
++import java.util.List;
++import java.util.Objects;
++import java.util.concurrent.TimeUnit;
+ 
+ public class MainScreen extends AppCompatActivity  {
+     LinearLayout liked, add, search, listenlater;
+     SeekBar seekBar;
+-    ImageView play_button;
++    ImageView play_button , ImageShow;
+     MediaPlayer mediaPlayer;
++    TextView time;
+     //"gs://i190417-i192048.appspot.com/audio/sample-3s.mp3"
+     String audioUrl;
+-    //String audioUrl = "https://firebasestorage.googleapis.com/v0/b/i190417-i192048.appspot.com/o/audio%2FAstro?alt=media&token=d11a4997-017b-4d0d-8d7e-40ed28c76a57";
++    String imageUrl;
+     DatabaseReference databaseReference;
+     FirebaseDatabase firebaseDatabase;
+     FirebaseStorage firebasestorage;
+-    //String storageLocation =
++
+ 
+     @SuppressLint("MissingInflatedId")
+     @Override
+@@ -50,8 +68,11 @@
+ 
+         super.onCreate(savedInstanceState);
+         setContentView(R.layout.activity_main_screen);
++
++        ImageShow = findViewById(R.id.image_music);
+         seekBar = findViewById(R.id.seek_bar);
+         play_button = findViewById(R.id.to_play_16);
++        time = findViewById(R.id.timer);
+         liked = findViewById(R.id.liked);
+         add = findViewById(R.id.add);
+         search = findViewById(R.id.search);
+@@ -66,32 +87,7 @@
+         play_button.setOnClickListener(new View.OnClickListener() {
+             @Override
+             public void onClick(View view) {
+-                StorageReference audioRef = storageReference.child("audio/Astro" );
+-
+-                databaseReference.addValueEventListener(new ValueEventListener() {
+-                    @Override
+-                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+-                        audioRef.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
+-                            @Override
+-                            public void onSuccess(Uri uri) {
+-                                audioUrl = uri.toString();
+-                                System.out.println(audioUrl);
+-                                onPlayClick();
+-                                playAudio(audioUrl);
+-                            }
+-                        }).addOnFailureListener(new OnFailureListener() {
+-                            @Override
+-                            public void onFailure(@NonNull Exception e) {
+-                                Toast.makeText(MainScreen.this,"Failure getting url",Toast.LENGTH_SHORT).show();
+-                            }
+-                        });
+-                    }
+-
+-                    @Override
+-                    public void onCancelled(@NonNull DatabaseError error) {
+-                        Toast.makeText(MainScreen.this, "Fail to get audio url.", Toast.LENGTH_SHORT).show();
+-                    }
+-                });
++                getDataFromDatabase();
+             }
+         });
+ 
+@@ -113,13 +109,14 @@
+ 
+         if(!mediaPlayer.isPlaying()){
+             try {
+-                //mediaPlayer.reset();
++
+                 mediaPlayer.setDataSource(audioUrl);
+                 mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+                     @Override
+                     public void onPrepared(MediaPlayer mediaPlayer) {
+                         setSeekBar(audioUrl);
+                         mediaPlayer.start();
++                        mediaPlayer.setLooping(true);
+                     }
+                 });
+                 mediaPlayer.prepareAsync();
+@@ -131,6 +128,7 @@
+         else if (mediaPlayer.isPlaying()){
+             try{
+                 onPauseClick();
++                //mediaPlayer.pause();
+                 mediaPlayer.reset();
+                 mediaPlayer.prepare();
+                 mediaPlayer.stop();
+@@ -144,15 +142,12 @@
+ 
+     }
+ 
+-//    public void initMediaPlayer(){
+-//        mediaPlayer.setOnErrorListener((MediaPlayer.OnErrorListener) this);
+-//    }
+-
+     @SuppressLint("ResourceAsColor")
+     private void onPlayClick(){
+         play_button.setBackgroundColor(R.color.black);
+         play_button.setImageResource(R.drawable.pause);
+     }
++
+     @SuppressLint("ResourceAsColor")
+     private void onPauseClick(){
+         play_button.setBackgroundColor(R.color.black);
+@@ -161,34 +156,111 @@
+ 
+     public void setSeekBar(String audioUrl){
+ 
+-        System.out.println(mediaPlayer.getDuration());
++        //System.out.println(mediaPlayer.getDuration());
+         seekBar.setMax(mediaPlayer.getDuration()/1000);
+         Handler handler = new Handler();
+         MainScreen.this.runOnUiThread(new Runnable() {
++            @SuppressLint({"DefaultLocale", "SetTextI18n"})
+             @Override
+             public void run() {
+                 if(mediaPlayer!=null){
++
+                     int current_pos = mediaPlayer.getCurrentPosition()/1000;
++                    int time_formatted = mediaPlayer.getCurrentPosition()/1000;
++                    if(time_formatted<60){
++                        time.setText(Integer.toString(mediaPlayer.getCurrentPosition()/1000)+"s");
++                    }
++                    else
++                        time.setText(Integer.toString(mediaPlayer.getCurrentPosition()/1000/60)+"m" + (Integer.toString(mediaPlayer.getCurrentPosition()/1000%60)+"s") );
++
+                     seekBar.setProgress(current_pos);
+-                    if(mediaPlayer.getDuration()/1000 == current_pos){
+-                        onPauseClick();
+-                        Toast.makeText(MainScreen.this,"Song Completed",Toast.LENGTH_SHORT).show();
+-                        mediaPlayer.seekTo(0);
+-                        seekBar.setProgress(0);
+-                        // this line (return) should be changed to something productive
+-                        // may restart activity or play the next coming music
+-                        return;
+-                    }
+ 
+                 }
+                 handler.postDelayed(this,1000);
+             }
+         });
++        // listener for setting position of your seekbar
++        seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
++            @Override
++            public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
++                if(mediaPlayer != null && b){
++                    mediaPlayer.seekTo(i*1000);
++                }
++            }
++
++            @Override
++            public void onStartTrackingTouch(SeekBar seekBar) {
++
++            }
++
++            @Override
++            public void onStopTrackingTouch(SeekBar seekBar) {
++
++            }
++        });
+     }
++
++    private void getDataFromDatabase(){
++        DocumentReference documentReference = FirebaseFirestore.getInstance().collection("Music").document("Astro");
++        documentReference.get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
++            @Override
++            public void onSuccess(DocumentSnapshot documentSnapshot) {
++                if(documentSnapshot.exists()){
++                    audioUrl = documentSnapshot.getString("musicURL");
++                    imageUrl = documentSnapshot.getString("imageURL");
++                    Picasso.get().load(imageUrl).into(ImageShow);
++//                    Uri uri = Uri.parse(imageUrl);
++//                    ImageShow.setImageURI(Uri.parse(uri.toString()));
++                    System.out.println(audioUrl);
++                    onPlayClick();
++                    playAudio(audioUrl);
++                }
++                else
++                    Toast.makeText(MainScreen.this,"No such thing found",Toast.LENGTH_SHORT).show();
++
++            }
++        }).addOnFailureListener(new OnFailureListener() {
++            @Override
++            public void onFailure(@NonNull Exception e) {
++                Toast.makeText(MainScreen.this,"Failed to get url",Toast.LENGTH_SHORT).show();
++            }
++        });
++    }
++
++}
+ 
+-//    @Override
+-//    public boolean onError(MediaPlayer mediaPlayer, int i, int i1) {
+-//        mediaPlayer.reset();
+-//        return false;
+-//    }
+-}
+\ No newline at end of file
++//                    if(mediaPlayer.getDuration()/1000 == current_pos){
++//                        onPauseClick();
++//                        Toast.makeText(MainScreen.this,"Song Completed",Toast.LENGTH_SHORT).show();
++//                        mediaPlayer.seekTo(0);
++//                        seekBar.setProgress(0);
++//                        //audioStop();
++//                        // this line (return) should be changed to something productive
++//                        // may restart activity or play the next coming music
++//                        //return;
++//                    }
++//                databaseReference.addValueEventListener(new ValueEventListener() {
++//                    @Override
++//                    public void onDataChange(@NonNull DataSnapshot snapshot) {
++//                        audioRef.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
++//                            @Override
++//                            public void onSuccess(Uri uri) {
++//                                audioUrl = uri.toString();
++//                                System.out.println(audioUrl);
++//                                onPlayClick();
++//                                playAudio(audioUrl);
++//                            }
++//                        }).addOnFailureListener(new OnFailureListener() {
++//                            @Override
++//                            public void onFailure(@NonNull Exception e) {
++//                                Toast.makeText(MainScreen.this,"Failure getting url",Toast.LENGTH_SHORT).show();
++//                            }
++//                        });
++//                    }
++//
++//                    @Override
++//                    public void onCancelled(@NonNull DatabaseError error) {
++//                        Toast.makeText(MainScreen.this, "Fail to get audio url.", Toast.LENGTH_SHORT).show();
++//                    }
++//                });
++//StorageReference audioRef = storageReference.child("audio/song.mp3" );
+\ No newline at end of file
+Index: app/src/main/res/layout/activity_main_screen.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<RelativeLayout xmlns:android=\"http://schemas.android.com/apk/res/android\"\r\n    xmlns:app=\"http://schemas.android.com/apk/res-auto\"\r\n    xmlns:tools=\"http://schemas.android.com/tools\"\r\n    android:layout_width=\"match_parent\"\r\n    android:layout_height=\"match_parent\"\r\n    android:background=\"@color/black\"\r\n    android:weightSum=\"1\"\r\n    android:orientation=\"vertical\"\r\n    tools:context=\".MainScreen\">\r\n\r\n    <LinearLayout\r\n        android:layout_width=\"match_parent\"\r\n        android:layout_height=\"645dp\"\r\n        android:orientation=\"vertical\">\r\n\r\n        <LinearLayout\r\n            android:layout_width=\"match_parent\"\r\n            android:layout_height=\"wrap_content\"\r\n            android:orientation=\"horizontal\">\r\n\r\n            <TextView\r\n                android:layout_width=\"wrap_content\"\r\n                android:layout_height=\"wrap_content\"\r\n                android:layout_marginLeft=\"15dp\"\r\n                android:layout_marginTop=\"10dp\"\r\n                android:text=\"Song Title\"\r\n                android:textColor=\"@color/white\"\r\n                android:textSize=\"40dp\"\r\n                android:textStyle=\"bold\" />\r\n\r\n            <ImageView\r\n                android:layout_width=\"wrap_content\"\r\n                android:layout_height=\"76dp\"\r\n                android:layout_marginLeft=\"80dp\"\r\n                android:src=\"@drawable/triangle\" />\r\n\r\n        </LinearLayout>\r\n\r\n        <TextView\r\n            android:layout_width=\"wrap_content\"\r\n            android:layout_height=\"wrap_content\"\r\n            android:layout_margin=\"20dp\"\r\n            android:text=\"By Artist\"\r\n            android:textColor=\"#Cbc115\"\r\n            android:textSize=\"30dp\" />\r\n\r\n        <ImageView\r\n            android:layout_width=\"match_parent\"\r\n            android:layout_height=\"230dp\"\r\n            android:src=\"@drawable/despacito\" />\r\n\r\n        <LinearLayout\r\n            android:layout_width=\"match_parent\"\r\n            android:layout_height=\"61dp\"\r\n            android:layout_marginTop=\"20dp\"\r\n            android:gravity=\"center\"\r\n            android:orientation=\"horizontal\">\r\n\r\n            <ImageView\r\n                android:layout_width=\"wrap_content\"\r\n                android:layout_height=\"wrap_content\"\r\n                android:src=\"@drawable/fastbackward\" />\r\n\r\n            <ImageView\r\n                android:clickable=\"true\"\r\n                android:focusable=\"true\"\r\n                android:id=\"@+id/to_play_16\"\r\n                android:layout_width=\"70dp\"\r\n                android:layout_height=\"70dp\"\r\n                android:background=\"@drawable/playone\" />\r\n\r\n            <ImageView\r\n                android:layout_width=\"wrap_content\"\r\n                android:layout_height=\"wrap_content\"\r\n                android:src=\"@drawable/fastforward\" />\r\n\r\n\r\n        </LinearLayout>\r\n\r\n        <SeekBar\r\n            android:id=\"@+id/seek_bar\"\r\n            android:layout_width=\"328dp\"\r\n            android:layout_height=\"44dp\"\r\n            android:thumbTint=\"#Cbc115\"\r\n            android:layout_gravity=\"center\"/>\r\n\r\n<!--        <ImageView-->\r\n<!--            android:layout_width=\"328dp\"-->\r\n<!--            android:layout_height=\"44dp\"-->\r\n<!--            android:layout_gravity=\"center\"-->\r\n<!--            android:src=\"@drawable/line\" />-->\r\n\r\n        <TextView\r\n            android:layout_width=\"match_parent\"\r\n            android:layout_height=\"34dp\"\r\n            android:layout_marginLeft=\"60dp\"\r\n            android:text=\"0:00\"\r\n            android:textColor=\"#Cbc115\" />\r\n\r\n        <LinearLayout\r\n            android:layout_width=\"match_parent\"\r\n            android:layout_height=\"57dp\"\r\n            android:layout_marginLeft=\"30dp\"\r\n            android:orientation=\"horizontal\">\r\n\r\n            <ImageView\r\n                android:layout_width=\"70dp\"\r\n                android:layout_height=\"match_parent\"\r\n                android:layout_marginLeft=\"10dp\"\r\n                android:src=\"@drawable/whiteheart\" />\r\n\r\n            <ImageView\r\n                android:layout_width=\"70dp\"\r\n                android:layout_height=\"match_parent\"\r\n                android:src=\"@drawable/download\" />\r\n\r\n            <ImageView\r\n                android:layout_width=\"70dp\"\r\n                android:layout_height=\"match_parent\"\r\n                android:src=\"@drawable/linemusic\" />\r\n\r\n            <ImageView\r\n                android:layout_width=\"70dp\"\r\n                android:layout_height=\"match_parent\"\r\n                android:src=\"@drawable/msg\" />\r\n\r\n            <ImageView\r\n                android:layout_width=\"70dp\"\r\n                android:layout_height=\"match_parent\"\r\n                android:src=\"@drawable/dots\" />\r\n\r\n        </LinearLayout>\r\n\r\n    </LinearLayout>\r\n\r\n\r\n\r\n    <LinearLayout\r\n        android:layout_width=\"match_parent\"\r\n        android:layout_height=\"wrap_content\"\r\n        android:layout_alignParentBottom=\"true\">\r\n\r\n\r\n        <LinearLayout\r\n            android:background=\"#2a2730\"\r\n            android:paddingVertical=\"8dp\"\r\n            android:id=\"@+id/liked\"\r\n            android:layout_width=\"wrap_content\"\r\n            android:layout_height=\"wrap_content\"\r\n            android:layout_weight=\"0.25\"\r\n            android:gravity=\"center\"\r\n            android:orientation=\"vertical\">\r\n\r\n            <ImageView\r\n                android:layout_width=\"55dp\"\r\n                android:layout_height=\"55dp\"\r\n                android:src=\"@drawable/heart\">\r\n\r\n            </ImageView>\r\n\r\n            <TextView\r\n                android:layout_width=\"wrap_content\"\r\n                android:layout_height=\"wrap_content\"\r\n                android:text=\"Liked\"\r\n                android:textColor=\"@color/white\">\r\n\r\n            </TextView>\r\n\r\n        </LinearLayout>\r\n\r\n        <LinearLayout\r\n            android:background=\"#2a2730\"\r\n            android:paddingVertical=\"8dp\"\r\n            android:id=\"@+id/add\"\r\n            android:layout_width=\"wrap_content\"\r\n            android:layout_height=\"wrap_content\"\r\n            android:layout_weight=\"0.25\"\r\n            android:gravity=\"center\"\r\n            android:orientation=\"vertical\">\r\n\r\n            <ImageView\r\n                android:layout_width=\"55dp\"\r\n                android:layout_height=\"55dp\"\r\n                android:src=\"@drawable/plus\">\r\n\r\n            </ImageView>\r\n\r\n            <TextView\r\n                android:layout_width=\"wrap_content\"\r\n                android:layout_height=\"wrap_content\"\r\n                android:text=\"Add\"\r\n                android:textColor=\"@color/white\">\r\n\r\n            </TextView>\r\n\r\n        </LinearLayout>\r\n\r\n        <LinearLayout\r\n            android:background=\"#2a2730\"\r\n            android:paddingVertical=\"8dp\"\r\n            android:id=\"@+id/search\"\r\n            android:layout_width=\"wrap_content\"\r\n            android:layout_height=\"wrap_content\"\r\n            android:layout_weight=\"0.25\"\r\n            android:gravity=\"center\"\r\n            android:orientation=\"vertical\">\r\n\r\n            <ImageView\r\n                android:layout_width=\"55dp\"\r\n                android:layout_height=\"55dp\"\r\n                android:src=\"@drawable/search\">\r\n\r\n            </ImageView>\r\n\r\n            <TextView\r\n                android:layout_width=\"wrap_content\"\r\n                android:layout_height=\"wrap_content\"\r\n                android:text=\"Search\"\r\n                android:textColor=\"@color/white\">\r\n\r\n            </TextView>\r\n\r\n        </LinearLayout>\r\n\r\n        <LinearLayout\r\n            android:background=\"#2a2730\"\r\n            android:paddingVertical=\"8dp\"\r\n            android:id=\"@+id/listenlater\"\r\n            android:layout_width=\"wrap_content\"\r\n            android:layout_height=\"wrap_content\"\r\n            android:layout_weight=\"0.25\"\r\n            android:gravity=\"center\"\r\n            android:orientation=\"vertical\">\r\n\r\n            <ImageView\r\n                android:layout_width=\"55dp\"\r\n                android:layout_height=\"55dp\"\r\n                android:src=\"@drawable/clock\">\r\n\r\n            </ImageView>\r\n\r\n            <TextView\r\n                android:layout_width=\"wrap_content\"\r\n                android:layout_height=\"wrap_content\"\r\n                android:text=\"Listen Later\"\r\n                android:textColor=\"@color/white\">\r\n\r\n            </TextView>\r\n\r\n        </LinearLayout>\r\n\r\n    </LinearLayout>\r\n\r\n</RelativeLayout>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/res/layout/activity_main_screen.xml b/app/src/main/res/layout/activity_main_screen.xml
+--- a/app/src/main/res/layout/activity_main_screen.xml	
++++ b/app/src/main/res/layout/activity_main_screen.xml	
+@@ -46,6 +46,7 @@
+             android:textSize="30dp" />
+ 
+         <ImageView
++            android:id="@+id/image_music"
+             android:layout_width="match_parent"
+             android:layout_height="230dp"
+             android:src="@drawable/despacito" />
+@@ -92,6 +93,7 @@
+ <!--            android:src="@drawable/line" />-->
+ 
+         <TextView
++            android:id="@+id/timer"
+             android:layout_width="match_parent"
+             android:layout_height="34dp"
+             android:layout_marginLeft="60dp"
+Index: app/build.gradle
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>plugins {\r\n    id 'com.android.application'\r\n    id 'com.google.gms.google-services'\r\n}\r\n\r\nandroid {\r\n    namespace 'com.ass2.i190417_i192048'\r\n    compileSdk 33\r\n\r\n    defaultConfig {\r\n        applicationId \"com.ass2.i190417_i192048\"\r\n        minSdk 21\r\n        targetSdk 33\r\n        versionCode 1\r\n        versionName \"1.0\"\r\n\r\n        testInstrumentationRunner \"androidx.test.runner.AndroidJUnitRunner\"\r\n    }\r\n\r\n    buildTypes {\r\n        release {\r\n            minifyEnabled false\r\n            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'\r\n        }\r\n    }\r\n    compileOptions {\r\n        sourceCompatibility JavaVersion.VERSION_1_8\r\n        targetCompatibility JavaVersion.VERSION_1_8\r\n    }\r\n}\r\n\r\ndependencies {\r\n    implementation platform('com.google.firebase:firebase-bom:31.0.0')\r\n    implementation 'androidx.appcompat:appcompat:1.5.1'\r\n    implementation 'com.google.android.material:material:1.6.1'\r\n    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'\r\n    implementation 'com.google.firebase:firebase-auth:21.1.0'\r\n    implementation 'com.google.firebase:firebase-storage:20.1.0'\r\n    implementation 'com.google.firebase:firebase-firestore:24.4.0'\r\n    implementation 'com.google.firebase:firebase-database:20.0.4'\r\n    testImplementation 'junit:junit:4.13.2'\r\n    androidTestImplementation 'androidx.test.ext:junit:1.1.3'\r\n    androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'\r\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/build.gradle b/app/build.gradle
+--- a/app/build.gradle	
++++ b/app/build.gradle	
+@@ -41,4 +41,5 @@
+     testImplementation 'junit:junit:4.13.2'
+     androidTestImplementation 'androidx.test.ext:junit:1.1.3'
+     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
++    implementation 'com.squareup.picasso:picasso:2.8'
+ }
+\ No newline at end of file
