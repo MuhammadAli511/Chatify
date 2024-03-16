@@ -13,7 +13,11 @@
   <a href="#controls">Features</a> •
   <a href="#contact">Contact</a>
 </p>
-![final](https://github.com/MuhammadAli511/Chatify/assets/83888735/2045942e-5c5d-4e60-acf3-418bb1f76d7c)
+
+
+<p align="center">
+  <img src="https://github.com/MuhammadAli511/Chatify/assets/83888735/2045942e-5c5d-4e60-acf3-418bb1f76d7c">
+</p>
 
 
 
