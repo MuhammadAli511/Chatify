@@ -13,6 +13,7 @@
   <a href="#controls">Features</a> •
   <a href="#contact">Contact</a>
 </p>
+![final](https://github.com/MuhammadAli511/Chatify/assets/83888735/2045942e-5c5d-4e60-acf3-418bb1f76d7c)
 
 
 
@@ -26,7 +27,7 @@ Introducing Chatify, your next-level chat application designed specifically for 
  - OneSignal
 
 
-Key Features:
+# Key Features:
 - Contact Management: Easily add, organize, and manage your contacts. Chatify allows you to keep your connections at arm's length, ready to start a conversation anytime.
 - Versatile Chatting Options: Engage in rich text conversations, share your moments through images, or express yourself more personally with audio messages. Chatify supports diverse communication needs.
 - Real-time Push Notifications: Never miss a message with OneSignal-powered push notifications. Stay updated with new messages and alerts directly on your device, ensuring you're always in the loop.
